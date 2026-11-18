@@ -1,5 +1,5 @@
-// 离线缓存：先用本机存的页面立即打开，同时在后台取新版，下次打开生效
-const CACHE = 'fupan-v2';
+// 离线缓存：有网时先取线上最新版（改完马上生效），取不到再用本机存的页面，没网也能打开
+const CACHE = 'fupan-v3';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])).then(() => self.skipWaiting()));
@@ -17,10 +17,12 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   e.respondWith(caches.open(CACHE).then(async cache => {
-    const hit = await cache.match(req, { ignoreSearch: true });
-    const fresh = fetch(req, { cache: 'no-cache' })
-      .then(res => { if (res.ok) cache.put(req, res.clone()); return res; })
-      .catch(() => hit || Response.error());
-    return hit || fresh;
+    try {
+      const res = await fetch(req, { cache: 'no-cache' });
+      if (res.ok) cache.put(req, res.clone());
+      return res;
+    } catch (err) {
+      return (await cache.match(req, { ignoreSearch: true })) || Response.error();
+    }
   }));
 });
