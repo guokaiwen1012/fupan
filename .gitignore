@@ -1,0 +1,4 @@
+# 仓库是公开的：未加密的源码和带客户原消息的测试数据只留在本机
+decrypted.html
+live-check.html
+tests/
