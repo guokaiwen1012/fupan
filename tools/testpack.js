@@ -8,7 +8,7 @@
 //   变了的消息逐条确认是想要的，再 node _tests/check.js --save 存成新基准；用户新纠正的写法加进 fix.txt。
 //   推送时重新打包，让别的会话也拿到最新的基准和纠正记录。
 //
-// 打包：FUPAN_PW='口令' node tools/testpack.js pack _tests tests.enc
+// 打包：FUPAN_PW='口令' node tools/testpack.js pack _tests tests.enc   （会先自动跑 check.js，没通过不打包）
 // 解包：FUPAN_PW='口令' node tools/testpack.js unpack tests.enc _tests
 // 列出：FUPAN_PW='口令' node tools/testpack.js list tests.enc      （看每批数据的日期，方便定期清理）
 // 只打包 *.txt 聊天记录、核对脚本和基准 snapshot.json；parser*.js 是从页面源码抽出来的明文，不打包
@@ -40,6 +40,13 @@ function clean(dir){
 }
 if(cmd==='pack'){
   clean(a);
+  // 打包前自动跑回归：没「全部通过」就不打包（推送流程里打包在前，这样漏跑回归也推不上去）。确实要跳过：FUPAN_FORCE=1
+  const ck=path.join(a,'check.js');
+  if(fs.existsSync(ck)&&fs.existsSync(path.join(a,'../index.html'))&&!process.env.FUPAN_FORCE){
+    const r=require('child_process').spawnSync('node',[ck],{encoding:'utf8'});
+    if(r.status!==0){console.error((r.stdout||'')+(r.stderr||'')+'\n✗ 回归没通过，不打包。改好再打包；确实要跳过用 FUPAN_FORCE=1');process.exit(1)}
+    console.log('回归 ✓ 全部通过');
+  }
   const files={};for(const n of fs.readdirSync(a).sort())if(/\.(txt|js|sh|json)$/.test(n)&&!/^parser/.test(n))files[n]=fs.readFileSync(path.join(a,n),'utf8');
   const s=crypto.randomBytes(16),i=crypto.randomBytes(12),c=crypto.createCipheriv('aes-256-gcm',keyOf(s),i);
   const d=Buffer.concat([c.update(zlib.gzipSync(JSON.stringify(files))),c.final(),c.getAuthTag()]);
