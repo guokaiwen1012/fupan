@@ -12,8 +12,8 @@
 // 解包：FUPAN_PW='口令' node tools/testpack.js unpack tests.enc _tests
 // 列出：FUPAN_PW='口令' node tools/testpack.js list tests.enc      （看每批数据的日期，方便定期清理）
 // 只打包 *.txt 聊天记录、核对脚本和基准 snapshot.json；parser*.js 是从页面源码抽出来的明文，不打包
-// 只保留最近 15 天：打包前先把最后一条消息早于 15 天前的批次文件删掉（同时去掉 expect.txt 里用到它的行、snapshot.json 里它的消息）
-// 单独清理：node tools/testpack.js clean _tests      （不需要口令）
+// 批次文件一直保留，不再按日期删（每批都是考题）。确实要删旧批次时手动运行：
+// 单独清理：node tools/testpack.js clean _tests      （不需要口令；删掉最后一条消息早于 15 天前的批次，同时去掉 expect.txt 里用到它的行、snapshot.json 里它的消息）
 const fs=require('fs'),path=require('path'),zlib=require('zlib'),crypto=require('crypto');
 const [cmd,a,b]=process.argv.slice(2), pw=process.env.FUPAN_PW, ITER=310000, KEEP_DAYS=15;
 if(cmd==='clean'&&a){clean(a);process.exit(0)}
@@ -39,7 +39,6 @@ function clean(dir){
   console.log(`已删掉超过 ${KEEP_DAYS} 天的批次：${gone.join(' ')}`);
 }
 if(cmd==='pack'){
-  clean(a);
   // 打包前自动跑回归：没「全部通过」就不打包（推送流程里打包在前，这样漏跑回归也推不上去）。确实要跳过：FUPAN_FORCE=1
   const ck=path.join(a,'check.js');
   if(fs.existsSync(ck)&&fs.existsSync(path.join(a,'../index.html'))&&!process.env.FUPAN_FORCE){
