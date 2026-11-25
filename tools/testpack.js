@@ -1,4 +1,13 @@
 // 回归测试数据打包 / 解包（加密后才放进仓库：仓库是公开的，测试数据里有客户原消息）
+//
+// ★ 改了识别规则、推送上线之前，先跑一遍回归：
+//     FUPAN_PW='口令' node tools/testpack.js unpack tests.enc _tests   （第一次用先解包）
+//     解密出页面源码放到 _tests 的上一级目录（文件名 index.html），然后
+//     node _tests/check.js            → 必须「全部通过」才推送
+//   check.js 会核对：已确认的中奖数（expect.txt）、消息自己写的合计、用户纠正过的写法（fix.txt）、和上次基准（snapshot.json）比哪些消息变了。
+//   变了的消息逐条确认是想要的，再 node _tests/check.js --save 存成新基准；用户新纠正的写法加进 fix.txt。
+//   推送时重新打包，让别的会话也拿到最新的基准和纠正记录。
+//
 // 打包：FUPAN_PW='口令' node tools/testpack.js pack _tests tests.enc
 // 解包：FUPAN_PW='口令' node tools/testpack.js unpack tests.enc _tests
 // 列出：FUPAN_PW='口令' node tools/testpack.js list tests.enc      （看每批数据的日期，方便定期清理）
